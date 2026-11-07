@@ -90,4 +90,35 @@ export async function registerPagesRoutes(app: FastifyInstance) {
       return { ok: true, subscribed_fields: ["feed"] };
     },
   );
+
+  app.delete<{ Params: { pageId: string } }>(
+    "/api/pages/:pageId/subscribe",
+    async (req, reply) => {
+      const { error, session } = requireSession(req);
+      if (error || !session) {
+        return reply
+          .code(401)
+          .send({ error: "login_required", login: "/auth/meta" });
+      }
+      const tokenRow = await getPageTokenForAccount(
+        session.accountId,
+        req.params.pageId,
+      );
+      if (!tokenRow) {
+        return reply.code(404).send({ error: "page_not_found" });
+      }
+      const { graphDelete } = await import("../graph/client.js");
+      await graphDelete(
+        `/${tokenRow.facebookPageId}/subscribed_apps`,
+        tokenRow.pageToken,
+        undefined,
+        "page_unsubscribe",
+      );
+      await db
+        .update(pages)
+        .set({ webhookSubscribed: false })
+        .where(eq(pages.id, req.params.pageId));
+      return { ok: true };
+    },
+  );
 }

@@ -3,6 +3,8 @@ import { env } from "./config.js";
 import { pingDb } from "./db/index.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerPagesRoutes } from "./routes/pages.js";
+import { registerPostsRoutes } from "./routes/posts.js";
+import { registerRulesRoutes } from "./routes/rules.js";
 import { registerWebhookRoutes } from "./routes/webhook.js";
 
 const loggerRedact = {
@@ -46,6 +48,8 @@ export async function buildApp(
 
   await registerAuthRoutes(app);
   await registerPagesRoutes(app);
+  await registerPostsRoutes(app);
+  await registerRulesRoutes(app);
   await registerWebhookRoutes(app);
 
   return app;
