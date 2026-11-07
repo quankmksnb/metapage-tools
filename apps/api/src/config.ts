@@ -59,8 +59,10 @@ const envSchema = z.object({
         .map((e) => e.trim())
         .filter(Boolean),
     ),
-  /** Facebook Login for Business — bắt buộc với app loại Business (không dùng scope pages_* trực tiếp). */
+  /** Login for Business: copy Configuration ID. App use case Page: để trống, dùng META_OAUTH_SCOPES. */
   META_OAUTH_CONFIG_ID: z.string().optional().default(""),
+  /** App "Quản lý mọi thứ trên Trang" — scope OAuth (phân tách dấu phẩy). */
+  META_OAUTH_SCOPES: z.string().optional().default(""),
   WORKER_ENABLED: boolEnv,
   AUTO_REPLY_ENABLED: boolEnv,
 });

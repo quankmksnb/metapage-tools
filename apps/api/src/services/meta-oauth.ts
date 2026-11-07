@@ -10,8 +10,12 @@ import {
   listMeAccounts,
 } from "../graph/tokens.js";
 
-/** Fallback nếu chưa có config_id (app consumer cũ); app Business thường Invalid Scopes. */
+/** Profile-only khi chưa cấu hình login (không dùng cho Page). */
 export const META_OAUTH_SCOPES_FALLBACK = "public_profile,email";
+
+/** Gợi ý cho app use case「Quản lý mọi thứ trên Trang」— không cần config_id. */
+export const META_OAUTH_PAGE_SCOPES_SUGGESTED =
+  "business_management,pages_show_list,pages_read_engagement,pages_manage_posts,pages_manage_engagement";
 
 export function oauthRedirectUri(): string {
   return `${env.APP_URL.replace(/\/$/, "")}/auth/meta/callback`;
@@ -19,6 +23,14 @@ export function oauthRedirectUri(): string {
 
 export function usesLoginConfigId(): boolean {
   return env.META_OAUTH_CONFIG_ID.length > 0;
+}
+
+export function usesOAuthScopes(): boolean {
+  return env.META_OAUTH_SCOPES.trim().length > 0;
+}
+
+export function oauthLoginConfigured(): boolean {
+  return usesLoginConfigId() || usesOAuthScopes();
 }
 
 export function oauthDialogUrl(state: string): string {
@@ -30,6 +42,8 @@ export function oauthDialogUrl(state: string): string {
   });
   if (usesLoginConfigId()) {
     params.set("config_id", env.META_OAUTH_CONFIG_ID);
+  } else if (usesOAuthScopes()) {
+    params.set("scope", env.META_OAUTH_SCOPES.trim());
   } else {
     params.set("scope", META_OAUTH_SCOPES_FALLBACK);
   }

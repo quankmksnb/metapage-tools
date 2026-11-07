@@ -9,9 +9,12 @@ import {
 import { env } from "../config.js";
 import {
   completeOAuth,
+  META_OAUTH_PAGE_SCOPES_SUGGESTED,
   oauthDialogUrl,
+  oauthLoginConfigured,
   oauthRedirectUri,
   usesLoginConfigId,
+  usesOAuthScopes,
 } from "../services/meta-oauth.js";
 
 const OAUTH_STATE_COOKIE = "oauth_state";
@@ -25,11 +28,15 @@ function metaAppSecretSuspicious(secret: string): boolean {
 
 function renderSetupHtml(payload: {
   redirectUri: string;
-  metaOauthConfigIdSet: boolean;
+  oauthLoginReady: boolean;
   metaAppSecretSuspicious: boolean;
   databaseReady: boolean;
+  usesScopes: boolean;
 }): string {
   const tick = (ok: boolean) => (ok ? "✅" : "⬜");
+  const loginHint = payload.usesScopes
+    ? "<code>META_OAUTH_SCOPES</code> (app use case Page)"
+    : "<code>META_OAUTH_CONFIG_ID</code> hoặc <code>META_OAUTH_SCOPES</code>";
   return `<!doctype html>
 <html lang="vi"><head><meta charset="utf-8"><title>PageDesk — thiết lập OAuth</title>
 <meta http-equiv="refresh" content="15"></head>
@@ -39,15 +46,13 @@ function renderSetupHtml(payload: {
 <ol>
   <li>${tick(true)} <strong>Redirect URI</strong> trên Meta = <code>${payload.redirectUri}</code> (bạn đã lưu)</li>
   <li>${tick(!payload.metaAppSecretSuspicious)} <strong>META_APP_SECRET</strong> — App Secret thật từ Basic (hex), không phải mật khẩu Facebook. Sửa <code>.env</code> → restart <code>npm run dev</code>.</li>
-  <li>${tick(payload.metaOauthConfigIdSet)} <strong>META_OAUTH_CONFIG_ID</strong> — Meta → Facebook Login for Business → Configurations → copy <code>config_id</code> vào <code>.env</code> → restart.</li>
+  <li>${tick(payload.oauthLoginReady)} <strong>OAuth login</strong> — ${loginHint} trong <code>.env</code> → restart.</li>
   <li>${tick(payload.databaseReady)} <strong>Postgres</strong> — <code>docker compose up -d postgres</code>, <code>npm run db:migrate</code></li>
 </ol>
-<h2>Việc chỉ bạn làm trên Meta</h2>
-<ol>
-  <li>App <strong>PageDesk</strong> → thêm sản phẩm / use case <strong>Facebook Login for Business</strong> (nếu chưa có).</li>
-  <li><strong>Configurations → Create</strong> — thêm quyền: <code>pages_show_list</code>, <code>pages_read_engagement</code>, <code>pages_manage_posts</code>, <code>pages_manage_engagement</code>.</li>
-  <li>Copy <code>config_id</code> → dòng <code>META_OAUTH_CONFIG_ID=</code> trong <code>.env</code> (repo root).</li>
-</ol>
+<h2>App「Quản lý mọi thứ trên Trang」(PageDesk Pages)</h2>
+<p>Không có menu Configurations — dùng <code>META_OAUTH_SCOPES</code>:</p>
+<pre style="background:#f4f4f4;padding:1rem;overflow:auto">META_OAUTH_SCOPES=${META_OAUTH_PAGE_SCOPES_SUGGESTED}</pre>
+<p>Meta: Dashboard → <strong>Tùy chỉnh use case Page</strong> → bật đủ quyền tương ứng.</p>
 <p>Khi 3 ô trên đều ✅: <a href="/auth/meta"><strong>Bắt đầu đăng nhập</strong></a></p>
 </body></html>`;
 }
@@ -65,10 +70,12 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     secretLooksPlaceholder: env.META_APP_SECRET.includes("THAY_BANG"),
     metaAppSecretSuspicious: metaAppSecretSuspicious(env.META_APP_SECRET),
     oauthUsesConfigId: usesLoginConfigId(),
+    oauthUsesScopes: usesOAuthScopes(),
+    oauthLoginReady: oauthLoginConfigured(),
     metaOauthConfigIdSet: Boolean(env.META_OAUTH_CONFIG_ID),
-    setupHint: usesLoginConfigId()
+    setupHint: oauthLoginConfigured()
       ? null
-      : "App Business: tạo Login Configuration trên Meta → copy config_id vào META_OAUTH_CONFIG_ID trong .env",
+      : `Page use case: META_OAUTH_SCOPES=${META_OAUTH_PAGE_SCOPES_SUGGESTED} hoặc config_id từ Login for Business`,
     setupPage: `${env.APP_URL.replace(/\/$/, "")}/auth/meta/setup`,
     appUrl: env.APP_URL,
     redirectUri: oauthRedirectUri(),
@@ -88,18 +95,19 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     reply.type("text/html; charset=utf-8");
     return renderSetupHtml({
       redirectUri: oauthRedirectUri(),
-      metaOauthConfigIdSet: usesLoginConfigId(),
+      oauthLoginReady: oauthLoginConfigured(),
       metaAppSecretSuspicious: metaAppSecretSuspicious(env.META_APP_SECRET),
       databaseReady,
+      usesScopes: usesOAuthScopes(),
     });
   });
 
   app.get("/auth/meta", async (_req, reply) => {
-    if (!usesLoginConfigId()) {
+    if (!oauthLoginConfigured()) {
       return reply.code(503).send({
-        error: "missing_META_OAUTH_CONFIG_ID",
-        hint:
-          "PageDesk (Business): Meta → Facebook Login for Business → Configurations → Create → copy config_id → .env",
+        error: "missing_oauth_login_config",
+        hint: `PageDesk Pages: đặt META_OAUTH_SCOPES=${META_OAUTH_PAGE_SCOPES_SUGGESTED} trong .env (không cần config_id)`,
+        setup: `${env.APP_URL.replace(/\/$/, "")}/auth/meta/setup`,
         status: `${env.APP_URL.replace(/\/$/, "")}/auth/meta/status`,
       });
     }
