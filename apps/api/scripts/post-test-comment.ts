@@ -1,17 +1,16 @@
 import "../src/load-env.js";
 import { ilike } from "drizzle-orm";
 import { decryptToken } from "../src/crypto/tokens.js";
-import { db, closeDb } from "../src/db/index.js";
+import { closeDb, db } from "../src/db/index.js";
 import { pages } from "../src/db/schema.js";
-import { createComment } from "../src/graph/comments.js";
 import { graphGet } from "../src/graph/client.js";
+import { createComment } from "../src/graph/comments.js";
 
 const arg0 = process.argv[2];
 const LIST_ONLY = arg0 === "--list";
 const FBFID = LIST_ONLY ? "" : (arg0 ?? "331788966201246");
 const MSG =
-  process.argv[3] ??
-  "PageDesk test — comment từ Graph API (có thể xóa sau)";
+  process.argv[3] ?? "PageDesk test — comment từ Graph API (có thể xóa sau)";
 
 async function resolveObjectId(
   fbid: string,
@@ -20,7 +19,9 @@ async function resolveObjectId(
 ): Promise<string> {
   if (fbid.includes("_")) return fbid;
 
-  const feed = await graphGet<{ data?: Array<{ id: string; permalink_url?: string }> }>(
+  const feed = await graphGet<{
+    data?: Array<{ id: string; permalink_url?: string }>;
+  }>(
     `/${pageId}/published_posts`,
     token,
     {
@@ -30,9 +31,7 @@ async function resolveObjectId(
     "feed_lookup",
   );
   const hit = feed.data?.find(
-    (p) =>
-      p.id.includes(fbid) ||
-      (p.permalink_url?.includes(fbid) ?? false),
+    (p) => p.id.includes(fbid) || (p.permalink_url?.includes(fbid) ?? false),
   );
   if (hit) return hit.id;
 
@@ -77,11 +76,18 @@ async function main() {
     console.log(JSON.stringify({ error: "no_big_six", pages: all }, null, 2));
     process.exit(1);
   }
-  const row = rows[0]!;
+  const row = rows[0];
+  if (!row) {
+    process.exit(1);
+  }
   const token = decryptToken(row.tokenEnc, row.keyVersion);
   if (LIST_ONLY) {
     const feed = await graphGet<{
-      data?: Array<{ id: string; permalink_url?: string; created_time?: string }>;
+      data?: Array<{
+        id: string;
+        permalink_url?: string;
+        created_time?: string;
+      }>;
     }>(
       `/${row.pageId}/published_posts`,
       token,
