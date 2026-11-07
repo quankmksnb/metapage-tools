@@ -1,8 +1,13 @@
-import { and, asc, eq, gte } from "drizzle-orm";
+import { and, asc, count, eq, gte } from "drizzle-orm";
 import { env } from "../config.js";
 import { db } from "../db/index.js";
 import { commentRules, replyLog, webhookEvents } from "../db/schema.js";
-import { createComment } from "../graph/comments.js";
+import {
+  createComment,
+  hideComment,
+  likeComment,
+  privateReply,
+} from "../graph/comments.js";
 import { GraphApiError } from "../graph/errors.js";
 import { commentMatchesRule, pickReplyTemplate } from "../rules/match.js";
 import { getPageWithTokenByFacebookPageId } from "./page-tokens.js";
@@ -142,46 +147,98 @@ async function handleFeedPayload(payload: {
       break;
     }
   }
-  if (!matchedRule || matchedRule.replyMode !== "public") {
+  if (!matchedRule) {
     return { status: "skipped", error: "no_matching_rule" };
   }
 
-  const replyText = pickReplyTemplate(matchedRule.replyTemplates, commentId);
-  if (!replyText) {
+  const needsTemplate =
+    matchedRule.replyMode === "public" || matchedRule.replyMode === "private";
+  const replyText = needsTemplate
+    ? pickReplyTemplate(matchedRule.replyTemplates, commentId)
+    : `[${matchedRule.replyMode}]`;
+  if (needsTemplate && !replyText) {
     return { status: "skipped", error: "empty_template" };
   }
 
-  if (matchedRule.cooldownSeconds > 0 && value.from?.id) {
-    const since = new Date(Date.now() - matchedRule.cooldownSeconds * 1000);
-    const [recent] = await db
-      .select({ id: replyLog.id })
-      .from(replyLog)
-      .where(
-        and(
-          eq(replyLog.pageId, pageRow.internalPageId),
-          eq(replyLog.commenterId, value.from.id),
-          gte(replyLog.createdAt, since),
-        ),
-      )
-      .limit(1);
-    if (recent) {
-      return { status: "skipped", error: "cooldown" };
+  const commenterId = value.from?.id;
+  if (commenterId) {
+    if (matchedRule.cooldownSeconds > 0) {
+      const since = new Date(Date.now() - matchedRule.cooldownSeconds * 1000);
+      const [recent] = await db
+        .select({ id: replyLog.id })
+        .from(replyLog)
+        .where(
+          and(
+            eq(replyLog.pageId, pageRow.internalPageId),
+            eq(replyLog.commenterId, commenterId),
+            gte(replyLog.createdAt, since),
+          ),
+        )
+        .limit(1);
+      if (recent) {
+        return { status: "skipped", error: "cooldown" };
+      }
+    }
+
+    if (matchedRule.maxPerUserPerDay > 0) {
+      const dayStart = new Date();
+      dayStart.setHours(0, 0, 0, 0);
+      const [daily] = await db
+        .select({ total: count() })
+        .from(replyLog)
+        .where(
+          and(
+            eq(replyLog.pageId, pageRow.internalPageId),
+            eq(replyLog.commenterId, commenterId),
+            eq(replyLog.ruleId, matchedRule.id),
+            gte(replyLog.createdAt, dayStart),
+          ),
+        );
+      if ((daily?.total ?? 0) >= matchedRule.maxPerUserPerDay) {
+        return { status: "skipped", error: "max_per_user_per_day" };
+      }
     }
   }
 
+  const logText = replyText ?? `[${matchedRule.replyMode}]`;
+
   try {
-    const created = await createComment(
-      commentId,
-      replyText,
-      pageRow.pageToken,
-    );
+    let remoteCommentId: string | null = null;
+    switch (matchedRule.replyMode) {
+      case "public": {
+        const created = await createComment(
+          commentId,
+          logText,
+          pageRow.pageToken,
+        );
+        remoteCommentId = created.id;
+        break;
+      }
+      case "private": {
+        const created = await privateReply(
+          commentId,
+          logText,
+          pageRow.pageToken,
+        );
+        remoteCommentId = created.id ?? null;
+        break;
+      }
+      case "hide":
+        await hideComment(commentId, pageRow.pageToken);
+        break;
+      case "like":
+        await likeComment(commentId, pageRow.pageToken);
+        break;
+      default:
+        return { status: "skipped", error: "unsupported_reply_mode" };
+    }
     await db.insert(replyLog).values({
       pageId: pageRow.internalPageId,
       commentId,
       ruleId: matchedRule.id,
-      commenterId: value.from?.id ?? null,
-      replyText,
-      remoteCommentId: created.id,
+      commenterId: commenterId ?? null,
+      replyText: logText,
+      remoteCommentId,
     });
     return { status: "processed" };
   } catch (err) {

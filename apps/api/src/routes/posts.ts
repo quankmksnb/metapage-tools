@@ -11,7 +11,10 @@ import { getPageTokenForAccount } from "../services/meta-oauth.js";
 const createPostBody = z.object({
   message: z.string().min(1).max(63206),
   link: z.string().url().optional(),
-  runAt: z.string().datetime({ offset: true }),
+  /** ISO từ `Date.toISOString()` hoặc chuỗi có timezone. */
+  runAt: z.string().refine((s) => !Number.isNaN(Date.parse(s)), {
+    message: "invalid_schedule_time",
+  }),
   mode: z.enum(["native", "worker"]).default("native"),
   kind: z.enum(["text", "link", "photo", "multi_photo"]).default("text"),
 });
@@ -65,7 +68,7 @@ export async function registerPostsRoutes(app: FastifyInstance) {
       }
       const parsed = createPostBody.safeParse(req.body);
       if (!parsed.success) {
-        return reply.code(400).send({ error: parsed.error.flatten() });
+        return reply.code(400).send({ error: "invalid_body" });
       }
       const body = parsed.data;
       const runAt = new Date(body.runAt);

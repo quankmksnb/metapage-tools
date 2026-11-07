@@ -25,6 +25,9 @@ export default function PagesListPage() {
   return (
     <div>
       <h1>Facebook Pages</h1>
+      <p className="muted">
+        Chọn Page để quản lý rule, comment, lên lịch và inbox.
+      </p>
       {error ? (
         <p className="error">
           {error} — <a href="/">Đăng nhập lại</a>

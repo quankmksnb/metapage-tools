@@ -20,6 +20,16 @@ const ruleBody = z.object({
   maxPerUserPerDay: z.number().int().min(0).max(1000).default(5),
 });
 
+const rulePatch = ruleBody.partial().refine((v) => Object.keys(v).length > 0, {
+  message: "At least one field required",
+});
+
+async function requirePageForAccount(accountId: string, pageId: string) {
+  const tokenRow = await getPageTokenForAccount(accountId, pageId);
+  if (!tokenRow) return null;
+  return tokenRow;
+}
+
 export async function registerRulesRoutes(app: FastifyInstance) {
   app.get<{ Params: { pageId: string } }>(
     "/api/pages/:pageId/rules",
@@ -30,11 +40,9 @@ export async function registerRulesRoutes(app: FastifyInstance) {
           .code(401)
           .send({ error: "login_required", login: "/auth/meta" });
       }
-      const tokenRow = await getPageTokenForAccount(
-        session.accountId,
-        req.params.pageId,
-      );
-      if (!tokenRow) {
+      if (
+        !(await requirePageForAccount(session.accountId, req.params.pageId))
+      ) {
         return reply.code(404).send({ error: "page_not_found" });
       }
       const rules = await db
@@ -59,11 +67,9 @@ export async function registerRulesRoutes(app: FastifyInstance) {
       if (!parsed.success) {
         return reply.code(400).send({ error: parsed.error.flatten() });
       }
-      const tokenRow = await getPageTokenForAccount(
-        session.accountId,
-        req.params.pageId,
-      );
-      if (!tokenRow) {
+      if (
+        !(await requirePageForAccount(session.accountId, req.params.pageId))
+      ) {
         return reply.code(404).send({ error: "page_not_found" });
       }
       const [row] = await db
@@ -74,6 +80,71 @@ export async function registerRulesRoutes(app: FastifyInstance) {
         })
         .returning();
       return { rule: row };
+    },
+  );
+
+  app.patch<{ Params: { pageId: string; ruleId: string } }>(
+    "/api/pages/:pageId/rules/:ruleId",
+    async (req, reply) => {
+      const { error, session } = requireSession(req);
+      if (error || !session) {
+        return reply
+          .code(401)
+          .send({ error: "login_required", login: "/auth/meta" });
+      }
+      const parsed = rulePatch.safeParse(req.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: parsed.error.flatten() });
+      }
+      if (
+        !(await requirePageForAccount(session.accountId, req.params.pageId))
+      ) {
+        return reply.code(404).send({ error: "page_not_found" });
+      }
+      const [updated] = await db
+        .update(commentRules)
+        .set(parsed.data)
+        .where(
+          and(
+            eq(commentRules.id, req.params.ruleId),
+            eq(commentRules.pageId, req.params.pageId),
+          ),
+        )
+        .returning();
+      if (!updated) {
+        return reply.code(404).send({ error: "rule_not_found" });
+      }
+      return { rule: updated };
+    },
+  );
+
+  app.delete<{ Params: { pageId: string; ruleId: string } }>(
+    "/api/pages/:pageId/rules/:ruleId",
+    async (req, reply) => {
+      const { error, session } = requireSession(req);
+      if (error || !session) {
+        return reply
+          .code(401)
+          .send({ error: "login_required", login: "/auth/meta" });
+      }
+      if (
+        !(await requirePageForAccount(session.accountId, req.params.pageId))
+      ) {
+        return reply.code(404).send({ error: "page_not_found" });
+      }
+      const [deleted] = await db
+        .delete(commentRules)
+        .where(
+          and(
+            eq(commentRules.id, req.params.ruleId),
+            eq(commentRules.pageId, req.params.pageId),
+          ),
+        )
+        .returning({ id: commentRules.id });
+      if (!deleted) {
+        return reply.code(404).send({ error: "rule_not_found" });
+      }
+      return { ok: true };
     },
   );
 

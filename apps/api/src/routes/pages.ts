@@ -3,7 +3,7 @@ import type { FastifyInstance } from "fastify";
 import { requireSession } from "../auth/guard.js";
 import { db } from "../db/index.js";
 import { pages } from "../db/schema.js";
-import { graphPost } from "../graph/client.js";
+import { graphGet, graphPost } from "../graph/client.js";
 import { createComment } from "../graph/comments.js";
 import { GraphApiError } from "../graph/errors.js";
 import {
@@ -22,6 +22,54 @@ export async function registerPagesRoutes(app: FastifyInstance) {
     const list = await listPagesForSession(session.accountId);
     return { pages: list };
   });
+
+  app.get<{ Params: { pageId: string } }>(
+    "/api/pages/:pageId/published-posts",
+    async (req, reply) => {
+      const { error, session } = requireSession(req);
+      if (error || !session) {
+        return reply
+          .code(401)
+          .send({ error: "login_required", login: "/auth/meta" });
+      }
+      const tokenRow = await getPageTokenForAccount(
+        session.accountId,
+        req.params.pageId,
+      );
+      if (!tokenRow) {
+        return reply.code(404).send({ error: "page_not_found" });
+      }
+      try {
+        const feed = await graphGet<{
+          data?: Array<{
+            id: string;
+            message?: string;
+            permalink_url?: string;
+            created_time?: string;
+          }>;
+        }>(
+          `/${tokenRow.facebookPageId}/published_posts`,
+          tokenRow.pageToken,
+          {
+            fields: "id,message,permalink_url,created_time",
+            limit: "25",
+          },
+          "published_posts_list",
+        );
+        return { posts: feed.data ?? [] };
+      } catch (err) {
+        if (err instanceof GraphApiError) {
+          const status = err.category === "TOKEN_INVALID" ? 401 : 502;
+          return reply.code(status).send({
+            error: err.message,
+            category: err.category,
+            code: err.code,
+          });
+        }
+        throw err;
+      }
+    },
+  );
 
   app.post<{
     Params: { pageId: string };
