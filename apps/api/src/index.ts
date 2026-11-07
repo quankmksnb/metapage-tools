@@ -1,19 +1,8 @@
 import "dotenv/config";
-import Fastify from "fastify";
+import { buildApp } from "./app.js";
 import { env } from "./config.js";
-import { registerMetaRoutes } from "./routes/meta.js";
-import { registerWebhookRoutes } from "./routes/webhook.js";
 
-const app = Fastify({ logger: true });
-
-app.get("/health", async () => ({
-  ok: true,
-  service: "metapage-tools-api",
-  graphApiVersion: "v25.0",
-}));
-
-await registerMetaRoutes(app);
-await registerWebhookRoutes(app);
+const app = await buildApp();
 
 try {
   await app.listen({ port: env.PORT, host: "0.0.0.0" });

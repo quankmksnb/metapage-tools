@@ -18,7 +18,9 @@ export async function registerMetaRoutes(app: FastifyInstance) {
   }>("/api/comments", async (req, reply) => {
     const { objectId, message, pageAccessToken } = req.body ?? {};
     if (!objectId || !message || !pageAccessToken) {
-      return reply.code(400).send({ error: "objectId, message, pageAccessToken required" });
+      return reply
+        .code(400)
+        .send({ error: "objectId, message, pageAccessToken required" });
     }
     const result = await postComment(objectId, message, pageAccessToken);
     if (result.error) {

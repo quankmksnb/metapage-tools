@@ -4,6 +4,7 @@ Công cụ tự host để quản lý **Facebook Page**: lên lịch nội dung,
 
 - Repo: [quankmksnb/metapage-tools](https://github.com/quankmksnb/metapage-tools)
 - Bối cảnh chi tiết: [docs/CONTEXT.md](./docs/CONTEXT.md)
+- Kế hoạch triển khai: [docs/IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md)
 
 ## Cấu trúc
 
