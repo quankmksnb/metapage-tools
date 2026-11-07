@@ -149,6 +149,51 @@ export async function registerRulesRoutes(app: FastifyInstance) {
   );
 
   app.post<{
+    Params: { pageId: string };
+    Body: {
+      sampleText?: string;
+      pattern: string;
+      matchType?: "contains" | "regex" | "exact";
+      caseSensitive?: boolean;
+      replyTemplates?: string[];
+    };
+  }>("/api/pages/:pageId/rules/dry-run", async (req, reply) => {
+    const { error, session } = requireSession(req);
+    if (error || !session) {
+      return reply
+        .code(401)
+        .send({ error: "login_required", login: "/auth/meta" });
+    }
+    if (!(await requirePageForAccount(session.accountId, req.params.pageId))) {
+      return reply.code(404).send({ error: "page_not_found" });
+    }
+    const pattern = req.body?.pattern?.trim();
+    if (!pattern) {
+      return reply.code(400).send({ error: "pattern_required" });
+    }
+    const matchType = req.body?.matchType ?? "contains";
+    const caseSensitive = req.body?.caseSensitive ?? false;
+    const sample = req.body?.sampleText ?? pattern;
+    const matches = commentMatchesRule(
+      sample,
+      matchType,
+      pattern,
+      caseSensitive,
+    );
+    const templates = req.body?.replyTemplates ?? [];
+    return {
+      matches,
+      replyWouldBe: matches
+        ? pickReplyTemplate(templates.length ? templates : ["..."], sample)
+        : null,
+      dryRun: true,
+      sample,
+      pattern,
+      matchType,
+    };
+  });
+
+  app.post<{
     Params: { pageId: string; ruleId: string };
     Body: { sampleText?: string };
   }>("/api/pages/:pageId/rules/:ruleId/test", async (req, reply) => {

@@ -47,10 +47,10 @@ export default function PagesListPage() {
             {pages.map((p) => (
               <tr key={p.id}>
                 <td>{p.name ?? p.pageId}</td>
-                <td>{p.tokenValid ? "OK" : "Invalid"}</td>
-                <td>{p.webhookSubscribed ? "On" : "Off"}</td>
+                <td>{p.tokenValid ? "Hợp lệ" : "Lỗi"}</td>
+                <td>{p.webhookSubscribed ? "Đã nối" : "Chưa"}</td>
                 <td>
-                  <Link href={`/pages/${p.id}`}>Quản lý</Link>
+                  <Link href={`/p/${p.id}/inbox`}>Mở</Link>
                 </td>
               </tr>
             ))}

@@ -1,9 +1,10 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { PageManagePanel } from "@/components/PageManagePanel";
-import { useParams } from "next/navigation";
-
-export default function PageDetailPage() {
-  const params = useParams<{ pageId: string }>();
-  return <PageManagePanel pageId={params.pageId} />;
+export default async function LegacyPageRedirect({
+  params,
+}: {
+  params: Promise<{ pageId: string }>;
+}) {
+  const { pageId } = await params;
+  redirect(`/p/${pageId}/inbox`);
 }
