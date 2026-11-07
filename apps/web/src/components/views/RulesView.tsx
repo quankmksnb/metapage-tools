@@ -4,7 +4,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useToast } from "@/components/ui/Toast";
 import { apiJson } from "@/lib/api";
 import type { CommentRule } from "@/lib/types";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type RuleFormState = {
   editingId: string | null;
@@ -49,6 +49,17 @@ export function RulesView({ pageId }: { pageId: string }) {
     replyWouldBe: string | null;
   } | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const el = dialogRef.current;
+    if (!el) return;
+    if (dialogOpen) {
+      if (!el.open) el.showModal();
+    } else if (el.open) {
+      el.close();
+    }
+  }, [dialogOpen]);
 
   const load = useCallback(() => {
     setRules(null);
@@ -239,20 +250,56 @@ export function RulesView({ pageId }: { pageId: string }) {
         )}
       </div>
 
-      {dialogOpen ? (
-        <dialog className="dialog" open aria-labelledby="rule-dialog-title">
+      <dialog
+        ref={dialogRef}
+        className="dialog rule-dialog"
+        aria-labelledby="rule-dialog-title"
+        onClose={() => setDialogOpen(false)}
+      >
+        <div className="dialog-header">
           <h2 id="rule-dialog-title">
             {form.editingId ? "Sửa rule" : "Tạo rule"}
           </h2>
-          <form onSubmit={(ev) => void save(ev)} className="form-stack">
-            <label htmlFor="rule-name">Tên</label>
-            <input
-              id="rule-name"
-              value={form.name}
-              onChange={(ev) =>
-                setForm((f) => ({ ...f, name: ev.target.value }))
-              }
-            />
+          <button
+            type="button"
+            className="btn btn-icon secondary"
+            aria-label="Đóng"
+            onClick={() => setDialogOpen(false)}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+        <form onSubmit={(ev) => void save(ev)} className="rule-dialog-form">
+          <div className="rule-dialog-scroll form-stack">
+            <div className="form-grid-2">
+              <div>
+                <label htmlFor="rule-name">Tên</label>
+                <input
+                  id="rule-name"
+                  value={form.name}
+                  onChange={(ev) =>
+                    setForm((f) => ({ ...f, name: ev.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label htmlFor="rule-match">Kiểu khớp</label>
+                <select
+                  id="rule-match"
+                  value={form.matchType}
+                  onChange={(ev) =>
+                    setForm((f) => ({
+                      ...f,
+                      matchType: ev.target.value as CommentRule["matchType"],
+                    }))
+                  }
+                >
+                  <option value="contains">contains</option>
+                  <option value="exact">exact</option>
+                  <option value="regex">regex</option>
+                </select>
+              </div>
+            </div>
             <label htmlFor="rule-pattern">Pattern</label>
             <input
               id="rule-pattern"
@@ -261,12 +308,29 @@ export function RulesView({ pageId }: { pageId: string }) {
                 setForm((f) => ({ ...f, pattern: ev.target.value }))
               }
             />
+            <label htmlFor="rule-mode">Hành động khi khớp</label>
+            <select
+              id="rule-mode"
+              value={form.replyMode}
+              onChange={(ev) =>
+                setForm((f) => ({
+                  ...f,
+                  replyMode: ev.target.value as CommentRule["replyMode"],
+                }))
+              }
+            >
+              <option value="public">Trả lời public</option>
+              <option value="private">Inbox riêng</option>
+              <option value="hide">Ẩn comment</option>
+              <option value="like">Like comment</option>
+            </select>
             <label htmlFor="rule-templates">
               Mẫu trả lời (mỗi dòng một biến thể)
             </label>
             <textarea
               id="rule-templates"
-              rows={4}
+              rows={5}
+              className="textarea-lg"
               value={form.templatesText}
               onChange={(ev) =>
                 setForm((f) => ({ ...f, templatesText: ev.target.value }))
@@ -293,34 +357,40 @@ export function RulesView({ pageId }: { pageId: string }) {
             ) : null}
             <fieldset className="fieldset">
               <legend>Chặn spam</legend>
-              <label htmlFor="rule-cooldown">
-                Chờ giữa 2 lần trả lời (giây)
-              </label>
-              <input
-                id="rule-cooldown"
-                type="number"
-                min={0}
-                value={form.cooldownSeconds}
-                onChange={(ev) =>
-                  setForm((f) => ({
-                    ...f,
-                    cooldownSeconds: Number(ev.target.value),
-                  }))
-                }
-              />
-              <label htmlFor="rule-max">Mỗi người tối đa mỗi ngày</label>
-              <input
-                id="rule-max"
-                type="number"
-                min={0}
-                value={form.maxPerUserPerDay}
-                onChange={(ev) =>
-                  setForm((f) => ({
-                    ...f,
-                    maxPerUserPerDay: Number(ev.target.value),
-                  }))
-                }
-              />
+              <div className="form-grid-2">
+                <div>
+                  <label htmlFor="rule-cooldown">
+                    Chờ giữa 2 lần trả lời (giây)
+                  </label>
+                  <input
+                    id="rule-cooldown"
+                    type="number"
+                    min={0}
+                    value={form.cooldownSeconds}
+                    onChange={(ev) =>
+                      setForm((f) => ({
+                        ...f,
+                        cooldownSeconds: Number(ev.target.value),
+                      }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label htmlFor="rule-max">Mỗi người tối đa mỗi ngày</label>
+                  <input
+                    id="rule-max"
+                    type="number"
+                    min={0}
+                    value={form.maxPerUserPerDay}
+                    onChange={(ev) =>
+                      setForm((f) => ({
+                        ...f,
+                        maxPerUserPerDay: Number(ev.target.value),
+                      }))
+                    }
+                  />
+                </div>
+              </div>
             </fieldset>
             <label className="checkbox-row">
               <input
@@ -332,21 +402,21 @@ export function RulesView({ pageId }: { pageId: string }) {
               />
               Bật rule (chạy thật trên Facebook)
             </label>
-            <div className="btn-row">
-              <button
-                type="button"
-                className="btn secondary"
-                onClick={() => setDialogOpen(false)}
-              >
-                Huỷ
-              </button>
-              <button type="submit" className="btn">
-                Lưu
-              </button>
-            </div>
-          </form>
-        </dialog>
-      ) : null}
+          </div>
+          <div className="dialog-footer btn-row">
+            <button
+              type="button"
+              className="btn secondary"
+              onClick={() => setDialogOpen(false)}
+            >
+              Huỷ
+            </button>
+            <button type="submit" className="btn">
+              Lưu
+            </button>
+          </div>
+        </form>
+      </dialog>
     </>
   );
 }
