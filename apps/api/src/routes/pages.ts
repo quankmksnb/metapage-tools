@@ -76,13 +76,34 @@ export async function registerPagesRoutes(app: FastifyInstance) {
       if (!tokenRow) {
         return reply.code(404).send({ error: "page_not_found" });
       }
-      await graphPost(
-        `/${tokenRow.facebookPageId}/subscribed_apps`,
-        tokenRow.pageToken,
-        { subscribed_fields: "feed" },
-        undefined,
-        "page_subscribe",
-      );
+      try {
+        await graphPost(
+          `/${tokenRow.facebookPageId}/subscribed_apps`,
+          tokenRow.pageToken,
+          { subscribed_fields: "feed" },
+          undefined,
+          "page_subscribe",
+        );
+      } catch (err) {
+        if (err instanceof GraphApiError) {
+          const status =
+            err.category === "TOKEN_INVALID"
+              ? 401
+              : err.category === "PERMISSION"
+                ? 403
+                : 502;
+          return reply.code(status).send({
+            error: err.message,
+            category: err.category,
+            code: err.code,
+            hint:
+              err.category === "PERMISSION"
+                ? "Thêm pages_manage_metadata trong META_OAUTH_SCOPES + trên Meta use case Page, rồi đăng nhập lại /auth/meta"
+                : undefined,
+          });
+        }
+        throw err;
+      }
       await db
         .update(pages)
         .set({ webhookSubscribed: true })

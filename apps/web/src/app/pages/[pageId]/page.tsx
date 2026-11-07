@@ -79,6 +79,9 @@ export default function PageDetailPage() {
         <h2>Webhook</h2>
         <p className="muted">
           Cần HTTPS public trỏ về API <code>/webhooks/meta</code> trên Meta.
+          Subscribe cần quyền <code>pages_manage_metadata</code> — sau khi thêm
+          scope, đăng nhập lại{" "}
+          <a href="http://localhost:3000/auth/meta">/auth/meta</a>.
         </p>
         <button
           type="button"
