@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./load-env.js";
 import { buildApp } from "./app.js";
 import { env } from "./config.js";
 
