@@ -1,0 +1,30 @@
+---
+description: Meta Page automation scope, API constraints, và quy ước repo metapage-tools
+alwaysApply: true
+---
+
+# metapage-tools
+
+## Scope
+
+- Chỉ Facebook **Page** qua **Graph API chính thức** (Page access token).
+- Không implement browser automation, Groups API, hoặc “rải comment” profile / group.
+- Comment/reply qua API xuất hiện **dưới tên Page**, không phải User.
+
+## Bắt buộc kỹ thuật
+
+- Không commit `.env`; token lưu mã hoá; không log secret.
+- Gọi API có retry có backoff khi gặp rate limit (`80001`, headers `X-Business-Use-Case`).
+- Webhook: verify signature, xử lý idempotent.
+- Tránh reply trùng nội dung hàng loạt (spam policy Meta).
+
+## Tài liệu trong repo
+
+- `docs/CONTEXT.md` — mục tiêu & phạm vi đã chốt
+- `docs/ARCHITECTURE.md` — kiến trúc & schema draft
+- `docs/META_SETUP.md` — checklist Meta app
+
+## Stack
+
+- Monorepo nhỏ: `apps/api` (Fastify + TypeScript), `apps/web` (sau).
+- DB: Postgres khi cần scheduler; MVP có thể in-memory/file trước khi migrate.

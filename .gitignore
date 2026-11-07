@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Environment & secrets (never commit real values — see .env.example)
+.env
+.env.*
+.env.example
+credentials.json
+*.pem
+*.key
+*.p12
+secrets/
+
+# Local app data (MVP file store, SQLite, dumps — may hold encrypted tokens)
+data/
+*.sqlite
+*.sqlite3
+*.db
+*.sql.gz
+dump.sql
+
+# Logs & debug
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test / CI artifacts
+coverage/
+.turbo/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor (local settings only — shared rules live under .cursor/rules/)
+.idea/
+.vscode/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+
+# Future apps/web
+.next/
+out/
+
+# Local Docker overrides (often contain ports, DB passwords)
+docker-compose.override.yml
+docker-compose.override.yaml
+
+# Thiết kế / hướng dẫn agent (chỉ giữ local)
+docs/
+AGENTS.md
