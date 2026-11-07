@@ -1,7 +1,8 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import { env } from "./config.js";
 import { pingDb } from "./db/index.js";
-import { registerMetaRoutes } from "./routes/meta.js";
+import { registerAuthRoutes } from "./routes/auth.js";
+import { registerPagesRoutes } from "./routes/pages.js";
 import { registerWebhookRoutes } from "./routes/webhook.js";
 
 const loggerRedact = {
@@ -43,7 +44,8 @@ export async function buildApp(
     }
   });
 
-  await registerMetaRoutes(app);
+  await registerAuthRoutes(app);
+  await registerPagesRoutes(app);
   await registerWebhookRoutes(app);
 
   return app;
