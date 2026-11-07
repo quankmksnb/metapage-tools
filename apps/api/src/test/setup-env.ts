@@ -8,7 +8,7 @@ Object.assign(process.env, {
   META_APP_SECRET: "test-app-secret",
   META_VERIFY_TOKEN: "test-verify-token",
   GRAPH_VERSION: "v25.0",
-  DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/metapage_tools",
+  DATABASE_URL: "postgresql://postgres:postgres@localhost:55432/metapage_tools",
   TOKEN_ENC_KEY: testKey32,
   SESSION_SECRET: "test-session-secret-at-least-32-chars",
   WORKER_ENABLED: "false",
