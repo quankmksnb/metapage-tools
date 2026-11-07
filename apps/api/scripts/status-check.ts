@@ -1,7 +1,12 @@
 import "../src/load-env.js";
-import { db, closeDb } from "../src/db/index.js";
-import { commentRules, pages, replyLog, webhookEvents } from "../src/db/schema.js";
 import { env } from "../src/config.js";
+import { closeDb, db } from "../src/db/index.js";
+import {
+  commentRules,
+  pages,
+  replyLog,
+  webhookEvents,
+} from "../src/db/schema.js";
 
 async function main() {
   const pageRows = await db
@@ -11,7 +16,10 @@ async function main() {
       tokenValid: pages.tokenValid,
     })
     .from(pages);
-  const [ev] = await db.select({ id: webhookEvents.id }).from(webhookEvents).limit(1);
+  const [ev] = await db
+    .select({ id: webhookEvents.id })
+    .from(webhookEvents)
+    .limit(1);
   const [rp] = await db.select({ id: replyLog.id }).from(replyLog).limit(1);
   const rules = await db
     .select({
