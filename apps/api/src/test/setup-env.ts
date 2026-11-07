@@ -23,3 +23,4 @@ setDefault("TOKEN_ENC_KEY", testKey32);
 setDefault("SESSION_SECRET", "test-session-secret-at-least-32-chars");
 setDefault("WORKER_ENABLED", "false");
 setDefault("AUTO_REPLY_ENABLED", "false");
+setDefault("META_OAUTH_CONFIG_ID", "");

@@ -10,18 +10,15 @@ import {
   listMeAccounts,
 } from "../graph/tokens.js";
 
-export const META_OAUTH_SCOPES = [
-  "pages_show_list",
-  "pages_read_engagement",
-  "pages_manage_posts",
-  "pages_manage_engagement",
-  "pages_read_user_content",
-  "email",
-  "public_profile",
-].join(",");
+/** Fallback nếu chưa có config_id (app consumer cũ); app Business thường Invalid Scopes. */
+export const META_OAUTH_SCOPES_FALLBACK = "public_profile,email";
 
 export function oauthRedirectUri(): string {
   return `${env.APP_URL.replace(/\/$/, "")}/auth/meta/callback`;
+}
+
+export function usesLoginConfigId(): boolean {
+  return env.META_OAUTH_CONFIG_ID.length > 0;
 }
 
 export function oauthDialogUrl(state: string): string {
@@ -29,9 +26,13 @@ export function oauthDialogUrl(state: string): string {
     client_id: env.META_APP_ID,
     redirect_uri: oauthRedirectUri(),
     state,
-    scope: META_OAUTH_SCOPES,
     response_type: "code",
   });
+  if (usesLoginConfigId()) {
+    params.set("config_id", env.META_OAUTH_CONFIG_ID);
+  } else {
+    params.set("scope", META_OAUTH_SCOPES_FALLBACK);
+  }
   return `https://www.facebook.com/${env.GRAPH_VERSION}/dialog/oauth?${params}`;
 }
 
