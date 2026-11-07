@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { env } from "../config.js";
-import { postComment } from "../graph/client.js";
+import { createComment } from "../graph/comments.js";
+import { GraphApiError } from "../graph/errors.js";
 
 /**
  * MVP: endpoint thử comment (POST body) — production sẽ đi qua DB + queue.
@@ -22,10 +23,18 @@ export async function registerMetaRoutes(app: FastifyInstance) {
         .code(400)
         .send({ error: "objectId, message, pageAccessToken required" });
     }
-    const result = await postComment(objectId, message, pageAccessToken);
-    if (result.error) {
-      return reply.code(502).send(result);
+    try {
+      return await createComment(objectId, message, pageAccessToken);
+    } catch (err) {
+      if (err instanceof GraphApiError) {
+        const status = err.category === "TOKEN_INVALID" ? 401 : 502;
+        return reply.code(status).send({
+          error: err.message,
+          category: err.category,
+          code: err.code,
+        });
+      }
+      throw err;
     }
-    return result;
   });
 }

@@ -35,6 +35,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/metapage_tools
       - run: npm test
         env:
+          NODE_ENV: test
           APP_URL: http://localhost:3000
           META_APP_ID: ci-test-app
           META_APP_SECRET: ci-test-secret
