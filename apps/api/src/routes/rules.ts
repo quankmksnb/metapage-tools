@@ -113,6 +113,9 @@ export async function registerRulesRoutes(app: FastifyInstance) {
         ? pickReplyTemplate(rule.replyTemplates, sample)
         : null,
       dryRun: true,
+      sample,
+      pattern: rule.pattern,
+      matchType: rule.matchType,
     };
   });
 }

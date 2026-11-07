@@ -6,17 +6,27 @@ export function commentMatchesRule(
   pattern: string,
   caseSensitive: boolean,
 ): boolean {
-  const text = caseSensitive ? message : message.toLowerCase();
-  const pat = caseSensitive ? pattern : pattern.toLowerCase();
-  switch (matchType) {
-    case "exact":
-      return text === pat;
+  const norm = (s: string) =>
+    s
+      .normalize("NFC")
+      .replace(/\u200b/g, "")
+      .trim();
+  const cs = caseSensitive === true;
+  const msg = norm(message);
+  const pat = norm(pattern);
+  const kind = String(matchType).trim().toLowerCase();
+  switch (kind) {
+    case "exact": {
+      if (cs) return msg === pat;
+      return msg.toLowerCase() === pat.toLowerCase();
+    }
     case "contains":
-      return text.includes(pat);
+      // Không dùng toLowerCase cả chuỗi — tránh lệch ký tự tiếng Việt (đ/à).
+      return msg.includes(pat);
     case "regex": {
       try {
-        const flags = caseSensitive ? "" : "i";
-        return new RegExp(pattern, flags).test(message);
+        const flags = cs ? "" : "i";
+        return new RegExp(pat, flags).test(msg);
       } catch {
         return false;
       }

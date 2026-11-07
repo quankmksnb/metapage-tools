@@ -11,6 +11,25 @@ describe("commentMatchesRule", () => {
   it("exact match", () => {
     expect(commentMatchesRule("hi", "exact", "hi", true)).toBe(true);
   });
+
+  it("vietnamese contains", () => {
+    expect(
+      commentMatchesRule(
+        "xin chào dân test tool nhé",
+        "contains",
+        "xin chào",
+        false,
+      ),
+    ).toBe(true);
+    expect(
+      commentMatchesRule(
+        "xin chào dân test tool nhé",
+        "contains",
+        "xin chào dân test tool",
+        false,
+      ),
+    ).toBe(true);
+  });
 });
 
 describe("pickReplyTemplate", () => {

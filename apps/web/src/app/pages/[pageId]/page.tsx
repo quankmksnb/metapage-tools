@@ -37,7 +37,10 @@ export default function PageDetailPage() {
 
   async function subscribeWebhook() {
     try {
-      await apiJson(`/api/pages/${pageId}/subscribe`, { method: "POST" });
+      await apiJson(`/api/pages/${pageId}/subscribe`, {
+        method: "POST",
+        body: "{}",
+      });
       setMessage("Đã gọi subscribe feed.");
       reload();
     } catch (e) {
