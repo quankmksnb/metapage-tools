@@ -177,6 +177,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
 <h1>Đã kết nối Facebook</h1>
 <p>Page token đã lưu mã hóa trong Postgres.</p>
 <ul>
+  <li><a href="${env.WEB_ORIGIN.replace(/\/$/, "")}/pages">Admin UI</a> (Next.js)</li>
   <li><a href="/api/pages">GET /api/pages</a> — danh sách Page</li>
   <li><a href="/auth/meta/status">GET /auth/meta/status</a></li>
   <li><a href="/health">GET /health</a></li>

@@ -10,6 +10,7 @@ function setDefault(name: string, value: string): void {
 
 setDefault("NODE_ENV", "test");
 setDefault("APP_URL", "http://localhost:3000");
+setDefault("WEB_ORIGIN", "http://localhost:3001");
 setDefault("META_APP_ID", "test-app-id");
 setDefault("META_APP_SECRET", "test-app-secret");
 setDefault("META_VERIFY_TOKEN", "test-verify-token");

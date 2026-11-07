@@ -29,6 +29,8 @@ const envSchema = z.object({
     .default("development"),
   PORT: z.coerce.number().int().positive().default(3000),
   APP_URL: z.string().url(),
+  /** Origin admin UI (CORS + cookie cross-port dev). */
+  WEB_ORIGIN: z.string().url().optional().default("http://localhost:3001"),
   META_APP_ID: z.string().min(1, "META_APP_ID is required"),
   META_APP_SECRET: z.string().min(1, "META_APP_SECRET is required"),
   META_VERIFY_TOKEN: z.string().min(1, "META_VERIFY_TOKEN is required"),

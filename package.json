@@ -4,8 +4,9 @@
   "workspaces": ["apps/*"],
   "scripts": {
     "dev": "npm run dev -w @metapage/api",
-    "build": "npm run build -w @metapage/api",
-    "lint": "npm run lint -w @metapage/api && biome check .",
+    "dev:web": "npm run dev -w @metapage/web",
+    "build": "npm run build -w @metapage/api && npm run build -w @metapage/web",
+    "lint": "npm run lint -w @metapage/api && npm run lint -w @metapage/web && biome check .",
     "format": "biome format --write .",
     "test": "npm run test -w @metapage/api",
     "db:migrate": "npm run db:migrate -w @metapage/api",

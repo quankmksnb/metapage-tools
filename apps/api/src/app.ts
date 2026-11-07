@@ -1,7 +1,9 @@
+import cors from "@fastify/cors";
 import Fastify, { type FastifyInstance } from "fastify";
 import { env } from "./config.js";
 import { pingDb } from "./db/index.js";
 import { registerAuthRoutes } from "./routes/auth.js";
+import { registerInboxRoutes } from "./routes/inbox.js";
 import { registerPagesRoutes } from "./routes/pages.js";
 import { registerPostsRoutes } from "./routes/posts.js";
 import { registerRulesRoutes } from "./routes/rules.js";
@@ -30,6 +32,12 @@ export async function buildApp(
     logger: useLogger ? { level: "info", redact: loggerRedact } : false,
   });
 
+  await app.register(cors, {
+    origin: env.WEB_ORIGIN,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  });
+
   app.get("/health", async () => ({
     ok: true,
     service: "metapage-tools-api",
@@ -50,6 +58,7 @@ export async function buildApp(
   await registerPagesRoutes(app);
   await registerPostsRoutes(app);
   await registerRulesRoutes(app);
+  await registerInboxRoutes(app);
   await registerWebhookRoutes(app);
 
   return app;
