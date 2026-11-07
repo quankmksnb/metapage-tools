@@ -14,8 +14,9 @@ import {
 export const META_OAUTH_SCOPES_FALLBACK = "public_profile,email";
 
 /** Gợi ý cho app use case「Quản lý mọi thứ trên Trang」— không cần config_id. */
+/** pages_read_user_content bắt buộc khi có pages_manage_engagement — phải + Thêm trên Meta use case Page. */
 export const META_OAUTH_PAGE_SCOPES_SUGGESTED =
-  "business_management,pages_show_list,pages_read_engagement,pages_manage_posts,pages_manage_engagement";
+  "business_management,pages_show_list,pages_read_engagement,pages_manage_posts,pages_manage_engagement,pages_read_user_content";
 
 export function oauthRedirectUri(): string {
   return `${env.APP_URL.replace(/\/$/, "")}/auth/meta/callback`;

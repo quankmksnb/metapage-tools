@@ -8,8 +8,8 @@ import {
 } from "../auth/session.js";
 import { env } from "../config.js";
 import {
-  completeOAuth,
   META_OAUTH_PAGE_SCOPES_SUGGESTED,
+  completeOAuth,
   oauthDialogUrl,
   oauthLoginConfigured,
   oauthRedirectUri,
